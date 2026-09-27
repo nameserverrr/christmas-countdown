@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Christmas Countdown</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep: #071a10;
+            --bg-mid: #0f2d1c;
+            --bg-warm: #1a3d28;
+            --lime: #84cc16;
+            --lime-bright: #a3e635;
+            --gold: #fbbf24;
+            --cream: #fef3c7;
+            --red: #dc2626;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #071a10;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(132, 204, 22, 0.15), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 100%, rgba(251, 191, 36, 0.08), transparent),
+                linear-gradient(180deg, #071a10 0%, #0f2d1c 50%, #071a10 100%);
+            min-height: 100vh;
+            color: #fef3c7;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .display-font {
+            font-family: 'Fraunces', Georgia, serif;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        /* Grain texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* Subtle scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #071a10; }
+        ::-webkit-scrollbar-thumb { background: #1f4a2e; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2d6b42; }
+
+        /* ===== Snow ===== */
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            z-index: 1;
+            user-select: none;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) translateX(0) rotate(0); }
+            100% { transform: translateY(105vh) translateX(20px) rotate(360deg); }
+        }
+
+        /* ===== Animations ===== */
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        @keyframes bob-alt {
+            0%, 100% { transform: translateY(0) rotate(-3deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+        @keyframes spin-slow {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes modal-in {
+            from { opacity: 0; transform: scale(0.96) translateY(12px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .bob { animation: bob 5s ease-in-out infinite; }
+        .bob-alt { animation: bob-alt 6s ease-in-out infinite; }
+        .twinkle { animation: twinkle 3s ease-in-out infinite; }
+        .spin-ring { animation: spin-slow 10s linear infinite; }
+        .fade-up { animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .d-1 { animation-delay: 0.05s; }
+        .d-2 { animation-delay: 0.15s; }
+        .d-3 { animation-delay: 0.25s; }
+        .d-4 { animation-delay: 0.35s; }
+
+        /* ===== Sleeps counter ===== */
+        .sleeps-ring {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--cream);
+            background: #061a0d;
+            border-radius: 50%;
+            font-variant-numeric: tabular-nums;
+        }
+        .sleeps-ring::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 3px solid var(--lime);
+            border-radius: 50%;
+            border-right-color: transparent;
+            border-bottom-color: transparent;
+            animation: spin-slow 10s linear infinite;
+        }
+
+        /* ===== Countdown tiles ===== */
+        .time-tile {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .time-tile:hover {
+            border-color: rgba(132, 204, 22, 0.35);
+            transform: translateY(-2px);
+        }
+        .time-value {
+            font-family: 'Fraunces', Georgia, serif;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: var(--cream);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+        @media (min-width: 640px) {
+            .time-value { font-size: 2.25rem; }
+        }
+        .time-label {
+            font-size: 0.65rem;
+            color: rgba(254, 243, 199, 0.5);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-top: 0.5rem;
+        }
+
+        /* ===== Cards ===== */
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 20px;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
+        }
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(132, 204, 22, 0.25);
+        }
+
+        /* ===== Buttons ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-lime {
+            background: var(--lime);
+            color: #071a10;
+        }
+        .btn-lime:hover {
+            background: var(--lime-bright);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(132, 204, 22, 0.25);
+        }
+        .btn-lime:active { transform: translateY(0); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--cream);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .btn-ghost:hover {
+            border-color: rgba(132, 204, 22, 0.5);
+            background: rgba(132, 204, 22, 0.08);
+        }
+
+        /* ===== Advent ===== */
+        .advent-door {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #061a0d;
+            color: var(--cream);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 1.5px solid transparent;
+            position: relative;
+            font-variant-numeric: tabular-nums;
+        }
+        .advent-door:hover:not(.opened) {
+            border-color: var(--lime);
+            transform: scale(1.06);
+        }
+        .advent-door.opened {
+            background: var(--lime);
+            color: #071a10;
+            cursor: default;
+        }
+        .advent-door.opened::after {
+            content: '✓';
+            position: absolute;
+            font-size: 1rem;
+            font-weight: 900;
+        }
+        .advent-door.opened .door-number { opacity: 0; }
+        @media (min-width: 640px) {
+            .advent-door { font-size: 0.9rem; }
+        }
+
+        /* ===== Modal ===== */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            background: rgba(3, 10, 6, 0.85);
+            backdrop-filter: blur(6px);
+            padding: 1rem;
+            animation: fade-up 0.2s ease-out;
+        }
+        .modal.hidden { display: none; }
+
+        .modal-box {
+            background: linear-gradient(180deg, #14301f, #0a1f12);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+        }
+        .modal-box::-webkit-scrollbar { width: 4px; }
+        .modal-box::-webkit-scrollbar-thumb { background: #2d6b42; border-radius: 4px; }
+
+        .quiz-option {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--cream);
+            font-size: 0.9rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option:hover:not(:disabled) {
+            background: rgba(132, 204, 22, 0.08);
+            border-color: rgba(132, 204, 22, 0.35);
+        }
+        .quiz-option:disabled { cursor: default; }
+        .quiz-option.correct {
+            background: rgba(132, 204, 22, 0.15);
+            border-color: var(--lime);
+        }
+        .quiz-option.wrong {
+            background: rgba(220, 38, 38, 0.15);
+            border-color: var(--red);
+        }
+
+        .joke-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--cream);
+            text-align: center;
+            min-height: 5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 640px) {
+            .sleeps-ring {
+                width: 48px;
+                height: 48px;
+                font-size: 1.15rem;
+            }
+            .modal-box { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 py-6">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-14 fade-up">
+            <a href="#" class="flex items-center gap-3 group">
+                <svg class="w-9 h-9 transition-transform group-hover:rotate-12" viewBox="0 0 40 40" fill="none">
+                    <path d="M20 3l4 11h11l-9 7 3 11-9-7-9 7 3-11-9-7h11l4-11z"
+                          fill="#84cc16" stroke="#65a30d" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                <div class="leading-none">
+                    <div class="display-font text-lime-400 text-2xl">Merry</div>
+                    <div class="text-xs font-semibold text-amber-100/70 tracking-[0.2em] uppercase mt-0.5">Christmas</div>
+                </div>
+            </a>
+
+            <div class="flex items-center gap-3">
+                <button class="relative w-10 h-10 rounded-xl flex items-center justify-center text-amber-100/70 hover:text-lime-400 hover:bg-white/5 transition">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500"></span>
+                </button>
+                <button class="btn btn-lime text-sm hidden sm:inline-flex">Send a Card</button>
+            </div>
+        </header>
+
+        <!-- Hero -->
+        <section id="hero-section" class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-24">
+
+            <!-- Text side -->
+            <div class="fade-up d-1 order-2 lg:order-1">
+                <div class="flex flex-wrap items-center gap-3 mb-6">
+                    <span class="display-font text-5xl sm:text-6xl text-amber-50">Oh!</span>
+                    <div class="sleeps-ring" id="number-data">--</div>
+                    <span class="text-xl sm:text-2xl font-semibold text-amber-100/90" id="text-data">Sleeps Left</span>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2.5 sm:gap-3 mb-7 max-w-md">
+                    <div class="time-tile">
+                        <div class="time-value" id="days-display">--</div>
+                        <div class="time-label">Days</div>
+                    </div>
+                    <div class="time-tile">
+                        <div class="time-value" id="hours-display">--</div>
+                        <div class="time-label">Hours</div>
+                    </div>
+                    <div class="time-tile">
+                        <div class="time-value" id="minutes-display">--</div>
+                        <div class="time-label">Mins</div>
+                    </div>
+                    <div class="time-tile">
+                        <div class="time-value" id="seconds-display">--</div>
+                        <div class="time-label">Secs</div>
+                    </div>
+                </div>
+
+                <p class="text-amber-100/60 leading-relaxed max-w-md mb-7">
+                    Ho ho ho — the big day isn't here yet. While you wait, why not
+                    pass the time with a few festive activities below?
+                </p>
+
+                <a href="#activities" class="btn btn-lime">
+                    Explore Activities
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M13 6l6 6-6 6"/>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Santa side -->
+            <div class="fade-up d-2 order-1 lg:order-2 flex justify-center relative">
+                <div class="bob relative">
+                    <svg width="320" height="320" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-2xl">
+                        <!-- Body -->
+                        <path d="M100 320 Q100 210 200 210 Q300 210 300 320 Z" fill="#b91c1c"/>
+                        <path d="M100 320 Q100 210 200 210 Q300 210 300 320 Z" fill="url(#bodyShade)" opacity="0.6"/>
+                        <!-- Belt -->
+                        <rect x="100" y="300" width="200" height="18" fill="#1c1917"/>
+                        <rect x="182" y="294" width="36" height="30" rx="3" fill="#fbbf24"/>
+                        <rect x="188" y="300" width="24" height="18" rx="2" fill="#d97706"/>
+                        <!-- Boots -->
+                        <path d="M145 360 Q145 380 125 380 L115 380 Q105 380 105 370 L105 358 Z" fill="#1c1917"/>
+                        <path d="M255 360 Q255 380 275 380 L285 380 Q295 380 295 370 L295 358 Z" fill="#1c1917"/>
+                        <!-- Head -->
+                        <circle cx="200" cy="160" r="54" fill="#fde3d0"/>
+                        <!-- Cheeks -->
+                        <circle cx="167" cy="176" r="9" fill="#fca5a5" opacity="0.55"/>
+                        <circle cx="233" cy="176" r="9" fill="#fca5a5" opacity="0.55"/>
+                        <!-- Eyes -->
+                        <circle cx="182" cy="156" r="4.5" fill="#1c1917"/>
+                        <circle cx="218" cy="156" r="4.5" fill="#1c1917"/>
+                        <circle cx="183.5" cy="154.5" r="1.5" fill="white"/>
+                        <circle cx="219.5" cy="154.5" r="1.5" fill="white"/>
+                        <!-- Nose -->
+                        <ellipse cx="200" cy="172" rx="8" ry="7" fill="#f87171"/>
+                        <ellipse cx="197" cy="170" rx="2.5" ry="2" fill="#fca5a5"/>
+                        <!-- Beard -->
+                        <path d="M148 180 Q148 245 200 258 Q252 245 252 180 Q242 205 200 210 Q158 205 148 180Z" fill="#fafaf9"/>
+                        <path d="M155 195 Q160 240 200 250 Q240 240 245 195" stroke="#e7e5e4" stroke-width="1.2" fill="none"/>
+                        <!-- Mustache -->
+                        <path d="M172 186 Q186 196 200 191 Q214 196 228 186 Q218 194 200 197 Q182 194 172 186Z" fill="#fafaf9"/>
+                        <!-- Mouth -->
+                        <path d="M188 198 Q200 206 212 198" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round"/>
+                        <!-- Hat -->
+                        <path d="M148 128 Q160 55 200 48 Q245 55 255 128 Q225 118 200 120 Q175 118 148 128Z" fill="#b91c1c"/>
+                        <rect x="142" y="122" width="116" height="16" rx="8" fill="#fafaf9"/>
+                        <circle cx="258" cy="102" r="16" fill="#fafaf9"/>
+                        <!-- Waving arm -->
+                        <path d="M100 260 Q65 245 50 205" stroke="#b91c1c" stroke-width="26" stroke-linecap="round" fill="none"/>
+                        <circle cx="50" cy="198" r="16" fill="#fde3d0"/>
+                        <!-- Right arm -->
+                        <path d="M300 265 Q335 250 348 215" stroke="#b91c1c" stroke-width="26" stroke-linecap="round" fill="none"/>
+                        <circle cx="350" cy="208" r="16" fill="#fde3d0"/>
+                        <defs>
+                            <linearGradient id="bodyShade" x1="200" y1="210" x2="200" y2="320" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#7f1d1d" stop-opacity="0"/>
+                                <stop offset="1" stop-color="#7f1d1d" stop-opacity="0.7"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+
+                <!-- Bell -->
+                <svg class="absolute top-8 right-4 w-14 bob-alt" viewBox="0 0 64 64" fill="none">
+                    <path d="M32 10C23 10 18 17 18 26V40L12 50H52L46 40V26C46 17 41 10 32 10Z" fill="#fbbf24" stroke="#d97706" stroke-width="2" stroke-linejoin="round"/>
+                    <circle cx="32" cy="54" r="5" fill="#d97706"/>
+                    <circle cx="32" cy="12" r="2.5" fill="#d97706"/>
+                    <path d="M24 30 Q32 24 40 30" stroke="#fef3c7" stroke-width="2" fill="none" stroke-linecap="round"/>
+                </svg>
+
+                <!-- Star -->
+                <svg class="absolute bottom-16 left-2 w-16 twinkle" viewBox="0 0 64 64" fill="none">
+                    <path d="M32 6L39 24H58L43 35L49 53L32 42L15 53L21 35L6 24H25L32 6Z" fill="#fef08a" stroke="#fbbf24" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+
+                <!-- Sparkles -->
+                <svg class="absolute top-1/4 left-6 w-4 twinkle" style="animation-delay:0.8s" viewBox="0 0 24 24" fill="#fef08a">
+                    <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10Z"/>
+                </svg>
+                <svg class="absolute bottom-1/3 right-6 w-3 twinkle" style="animation-delay:1.5s" viewBox="0 0 24 24" fill="#fef08a">
+                    <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10Z"/>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Activities -->
+        <section id="activities" class="mb-16">
+            <div class="text-center mb-12 fade-up">
+                <h2 class="display-font text-4xl sm:text-5xl text-amber-50 mb-3">Pass the time</h2>
+                <p class="text-amber-100/50">A few festive things to do while the countdown ticks away.</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Quiz -->
+                <div class="card p-6 flex flex-col fade-up d-1">
+                    <div class="w-12 h-12 rounded-xl bg-lime-500/15 flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-lime-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                            <path d="M12 17h.01"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-amber-50 mb-1.5">Christmas Quiz</h3>
+                    <p class="text-amber-100/50 text-sm mb-5 flex-1">Five questions. How well do you actually know Christmas?</p>
+                    <button class="btn btn-lime w-full" onclick="openQuiz()">Start quiz</button>
+                </div>
+
+                <!-- Jokes -->
+                <div class="card p-6 flex flex-col fade-up d-2">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                            <line x1="9" y1="9" x2="9.01" y2="9"/>
+                            <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-amber-50 mb-1.5">Christmas Jokes</h3>
+                    <p class="text-amber-100/50 text-sm mb-5 flex-1">Terrible puns. Dad-approved. Guaranteed eye-rolls.</p>
+                    <button class="btn btn-lime w-full" onclick="openJokes()">Tell me one</button>
+                </div>
+
+                <!-- Advent -->
+                <div class="card p-6 flex flex-col fade-up d-3">
+                    <div class="w-12 h-12 rounded-xl bg-red-500/15 flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2"/>
+                            <path d="M16 2v4M8 2v4M3 10h18"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-amber-50 mb-1.5">Advent Calendar</h3>
+                    <p class="text-amber-100/50 text-sm mb-3 flex-1">A little note for every day of December.</p>
+                    <div id="advent-calendar" class="grid grid-cols-6 gap-1.5 w-full"></div>
+                    <div id="advent-message" class="text-sm mt-3 text-lime-400 font-medium min-h-[1.5rem]"></div>
+                </div>
+            </div>
+        </section>
+
+        <div id="msg-christmas" class="hidden text-center py-16 fade-up">
+            <p class="display-font text-5xl sm:text-6xl text-amber-50 mb-3">Merry Christmas 🎄</p>
+            <p class="text-amber-100/60">Today's the day. Enjoy every moment.</p>
+        </div>
+
+        <footer class="text-center text-xs text-amber-100/30 py-8 mt-8 border-t border-white/5">
+            Made with care · <span id="year"></span>
+        </footer>
+    </div>
+
+    <!-- Quiz modal -->
+    <div id="quiz-modal" class="modal hidden">
+        <div class="modal-box">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="display-font text-2xl text-amber-50">Christmas Quiz</h3>
+                    <p id="quiz-progress" class="text-xs text-amber-100/40 mt-1"></p>
+                </div>
+                <button onclick="closeQuiz()" class="text-amber-100/50 hover:text-amber-100 transition p-1">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <h4 id="quiz-question" class="text-amber-50 font-semibold mb-5 leading-snug"></h4>
+            <div id="quiz-options" class="space-y-2 mb-5"></div>
+            <div id="quiz-result" class="text-sm mb-4 min-h-[1.25rem] font-medium"></div>
+            <div class="flex justify-end gap-2">
+                <button id="next-btn" class="btn btn-lime hidden" onclick="nextQuestion()">Next</button>
+                <button id="restart-btn" class="btn btn-lime hidden" onclick="restartQuiz()">Play again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jokes modal -->
+    <div id="jokes-modal" class="modal hidden">
+        <div class="modal-box">
+            <div class="flex justify-between items-start mb-6">
+                <h3 class="display-font text-2xl text-amber-50">Christmas Jokes</h3>
+                <button onclick="closeJokes()" class="text-amber-100/50 hover:text-amber-100 transition p-1">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <p id="joke-display" class="joke-text mb-6">Tap below to get a joke.</p>
+            <div class="flex gap-2">
+                <button class="btn btn-lime flex-1" onclick="tellJoke()">Another one</button>
+                <button class="btn btn-ghost" onclick="tellJoke()">Random</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ---------- Snowflakes ---------- */
+        (function snow() {
+            const glyphs = ['❄', '❅', '❆', '·', '•'];
+            const isMobile = window.innerWidth < 640;
+            const count = isMobile ? 15 : 28;
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < count; i++) {
+                const s = document.createElement('span');
+                s.className = 'snowflake';
+                s.textContent = glyphs[(Math.random() * glyphs.length) | 0];
+                s.style.left = Math.random() * 100 + 'vw';
+                s.style.fontSize = (Math.random() * 12 + 8) + 'px';
+                s.style.opacity = (Math.random() * 0.4 + 0.25).toFixed(2);
+                s.style.animation = `fall ${(Math.random() * 6 + 7).toFixed(1)}s linear ${(Math.random() * 8).toFixed(1)}s infinite`;
+                frag.appendChild(s);
+            }
+            document.body.appendChild(frag);
+        })();
+
+        /* ---------- Year ---------- */
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        /* ---------- Countdown ---------- */
+        const el = {
+            number: document.getElementById('number-data'),
+            text: document.getElementById('text-data'),
+            days: document.getElementById('days-display'),
+            hours: document.getElementById('hours-display'),
+            mins: document.getElementById('minutes-display'),
+            secs: document.getElementById('seconds-display'),
+            msg: document.getElementById('msg-christmas'),
+            hero: document.getElementById('hero-section'),
+            activities: document.getElementById('activities')
+        };
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function tick() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+
+            let year = now.getFullYear();
+            if (month === 12 && day > 25) year++;
+
+            const target = new Date(year, 11, 25, 0, 0, 0);
+            const diff = target - now;
+
+            const isChristmas = month === 12 && day === 25;
+
+            if (isChristmas) {
+                el.hero.style.display = 'none';
+                el.activities.style.display = 'none';
+                el.msg.classList.remove('hidden');
+                return;
+            }
+
+            const days = Math.floor(diff / 86400000);
+            const hours = Math.floor(diff / 3600000) % 24;
+            const mins = Math.floor(diff / 60000) % 60;
+            const secs = Math.floor(diff / 1000) % 60;
+
+            el.days.textContent = pad(days);
+            el.hours.textContent = pad(hours);
+            el.mins.textContent = pad(mins);
+            el.secs.textContent = pad(secs);
+
+            el.number.textContent = pad(days);
+            el.text.textContent = days === 1 ? 'Sleep Left' : 'Sleeps Left';
+        }
+
+        tick();
+        setInterval(tick, 1000);
+
+        /* ---------- Quiz ---------- */
+        const quizData = [
+            { q: "Which Christmas song has been covered the most times?", a: ["Silent Night", "Jingle Bells", "White Christmas", "All I Want for Christmas"], c: 2 },
+            { q: "What colour is Rudolph's nose?", a: ["Blue", "Red", "Green", "Gold"], c: 1 },
+            { q: "Counting Rudolph, how many reindeer does Santa have?", a: ["6", "8", "9", "12"], c: 2 },
+            { q: "What traditionally sits on top of a Christmas tree?", a: ["Star", "Bell", "Candy Cane", "Snowflake"], c: 0 },
+            { q: "What do children traditionally leave out for Santa?", a: ["Tea & toast", "Milk & cookies", "Juice & fruit", "Coffee & cake"], c: 1 }
+        ];
+
+        let qIndex = 0, qScore = 0;
+
+        function openQuiz() {
+            document.getElementById('quiz-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            qIndex = 0; qScore = 0;
+            renderQuestion();
+        }
+        function closeQuiz() {
+            document.getElementById('quiz-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function renderQuestion() {
+            const prog = document.getElementById('quiz-progress');
+            const qEl = document.getElementById('quiz-question');
+            const optsEl = document.getElementById('quiz-options');
+            const resEl = document.getElementById('quiz-result');
+            const nextBtn = document.getElementById('next-btn');
+            const restartBtn = document.getElementById('restart-btn');
+
+            resEl.textContent = '';
+            nextBtn.classList.add('hidden');
+            restartBtn.classList.add('hidden');
+
+            if (qIndex >= quizData.length) {
+                const pct = Math.round((qScore / quizData.length) * 100);
+                const verdict =
+                    pct === 100 ? "Perfect. You're basically Santa." :
+                    pct >= 80 ? "Very impressive." :
+                    pct >= 60 ? "Solid effort." :
+                    pct >= 40 ? "Room to grow." :
+                    "Time for a Christmas movie marathon.";
+
+                prog.textContent = '';
+                qEl.textContent = `You scored ${qScore} / ${quizData.length}`;
+                optsEl.innerHTML = `
+                    <div class="text-center py-3">
+                        <div class="display-font text-4xl text-lime-400 mb-2">${pct}%</div>
+                        <p class="text-amber-100/60 text-sm">${verdict}</p>
+                    </div>`;
+                restartBtn.classList.remove('hidden');
+                return;
+            }
+
+            const current = quizData[qIndex];
+            prog.textContent = `Question ${qIndex + 1} of ${quizData.length}`;
+            qEl.textContent = current.q;
+            optsEl.innerHTML = '';
+
+            current.a.forEach((opt, i) => {
+                const b = document.createElement('button');
+                b.className = 'quiz-option';
+                b.textContent = opt;
+                b.onclick = () => pickAnswer(i, b);
+                optsEl.appendChild(b);
+            });
+        }
+
+        function pickAnswer(i, btn) {
+            const current = quizData[qIndex];
+            const all = document.querySelectorAll('#quiz-options .quiz-option');
+            const resEl = document.getElementById('quiz-result');
+            const nextBtn = document.getElementById('next-btn');
+
+            all.forEach(b => b.disabled = true);
+            all[current.c].classList.add('correct');
+
+            if (i === current.c) {
+                qScore++;
+                resEl.textContent = '✓ Correct';
+                resEl.style.color = '#a3e635';
+            } else {
+                btn.classList.add('wrong');
+                resEl.textContent = `✗ It was "${current.a[current.c]}"`;
+                resEl.style.color = '#f87171';
+            }
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() { qIndex++; renderQuestion(); }
+        function restartQuiz() { qIndex = 0; qScore = 0; renderQuestion(); }
+
+        /* ---------- Jokes ---------- */
+        const jokesList = [
+            "Why is Santa so jolly? He knows where all the naughty people live.",
+            "What do you call Santa when he's asleep? Santa Pause.",
+            "What do you get when you cross a snowman and a vampire? Frostbite.",
+            "Why did the Christmas tree go to the dentist? It needed a root canal.",
+            "What do you call an elf who sings? A wrapper.",
+            "Why was the snowman rummaging in the carrots? He was picking his nose.",
+            "What do you get if you eat Christmas decorations? Tinselitis.",
+            "Why do reindeer like to fly? They're afraid of hoofing it.",
+            "Why does Santa go down the chimney? Because it soots him.",
+            "What do you call a Christmas party? A ho-ho-ho-down.",
+            "Why are Christmas trees bad at knitting? They keep dropping their needles.",
+            "What's Santa's favourite music? Wrap music."
+        ];
+
+        let lastJoke = -1;
+
+        function openJokes() {
+            document.getElementById('jokes-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            const d = document.getElementById('joke-display');
+            d.textContent = 'Tap below to get a joke.';
+            d.style.color = 'rgba(254,243,199,0.4)';
+        }
+        function closeJokes() {
+            document.getElementById('jokes-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        function tellJoke() {
+            let i;
+            do { i = (Math.random() * jokesList.length) | 0; } while (i === lastJoke && jokesList.length > 1);
+            lastJoke = i;
+            const d = document.getElementById('joke-display');
+            d.style.opacity = '0';
+            setTimeout(() => {
+                d.textContent = jokesList[i];
+                d.style.color = '#fef3c7';
+                d.style.opacity = '1';
+            }, 120);
+        }
+
+        /* ---------- Advent ---------- */
+        function buildAdvent() {
+            const grid = document.getElementById('advent-calendar');
+            const now = new Date();
+            const m = now.getMonth() + 1;
+            const d = now.getDate();
+
+            if (m !== 12) {
+                grid.innerHTML = `<div class="col-span-6 text-amber-100/50 text-xs py-4 text-center">Opens on December 1st</div>`;
+                return;
+            }
+
+            const notes = [
+                "Start the countdown 🎁","Hang the stockings 🧦","Starry night ⭐","Santa's getting ready 🎅",
+                "Rudolph practising 🦌","Let it snow ❄️","Build a snowman ☃️","Sing a carol 🎵",
+                "Bake cookies 🍪","Decorate the tree 🎄","Write to Santa 📝","Wrap the presents 🎀",
+                "Make a wish ⭐","Light a candle 🕯️","Five to go! 🎄","Reindeer games 🦌",
+                "Check the list 🎅","Winter wonderland ❄️","Snowball fight ☃️","Karaoke night 🎵",
+                "More cookies 🍪","Craft ornaments 🎨","Follow the star ⭐","Christmas Eve 🕯️"
+            ];
+
+            grid.innerHTML = '';
+            for (let i = 1; i <= 24; i++) {
+                const opened = i <= d;
+                const door = document.createElement('div');
+                door.className = 'advent-door' + (opened ? ' opened' : '');
+                door.innerHTML = `<span class="door-number">${i}</span>`;
+                if (opened) door.onclick = () => showAdventNote(i, notes[i - 1]);
+                grid.appendChild(door);
+            }
+        }
+
+        function showAdventNote(i, note) {
+            const m = document.getElementById('advent-message');
+            m.textContent = note;
+            m.style.opacity = '0';
+            setTimeout(() => { m.style.opacity = '1'; }, 80);
+        }
+
+        buildAdvent();
+
+        /* ---------- Modal close ---------- */
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closeQuiz(); closeJokes(); }
+        });
+        document.querySelectorAll('.modal').forEach(m => {
+            m.addEventListener('click', e => {
+                if (e.target === m) {
+                    m.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
